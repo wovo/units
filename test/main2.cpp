@@ -23,12 +23,8 @@ struct xy {
       return xy( x - right.x, y - right.y );
    }
       
-  constexpr auto equal( const xy & right ) const {
-      return true; // ( x == right.x ) && ( y == right.y );
-   }
-   
-  constexpr auto operator==( const xy & right ) const {
-      return true; // ( x == right.x ) && ( y == right.y );
+   constexpr auto operator==( const xy & right ) const {
+      return ( x == right.x ) && ( y == right.y );
    }
    
    constexpr auto operator!=( const xy & right ) const {
@@ -45,7 +41,7 @@ struct xy {
 
 // ==========================================================================
 //
-// the value_and_dimension type
+// the value_ad_dimension type
 //
 // ==========================================================================
 
@@ -68,7 +64,7 @@ concept bool is_value = requires ( T a ){
 template< 
    is_value               _value_type,
    is_dimension           _dimension_type,
-   _dimension_type  _dimension
+   const _dimension_type  _dimension
 >
 struct value_and_dimension {
    
@@ -81,10 +77,7 @@ struct value_and_dimension {
    value_type value;
 
    value_and_dimension(){}
-   
-   constexpr value_and_dimension( 
-      const value_type & value 
-   ): 
+   constexpr value_and_dimension( value_type value ): 
       value( value )
    {}
    
@@ -94,7 +87,9 @@ struct value_and_dimension {
       value_type value,
       dimension_type dimension
    ){   
-      ( left << value << ':' << dimension ) -> T;
+      ( left << value ) -> T;
+      ( left << ':' ) -> T;
+      ( left << dimension ) -> T;
    }
    friend T & operator<<( 
       T & left, 
@@ -120,15 +115,6 @@ concept bool is_value_and_dimension = requires ( T a ) {
 //
 // ==========================================================================
 
-template< typename T, typename U >
-concept bool can_add = T::dimension.equal( U::dimension );
-
-template< typename T, typename U >
-concept bool can_add2 = requires ( T t, U u ) {  
-   ( t.value + u.value );
-   ( t.dimension == u.dimension );
-};
-
 template<
    is_value_and_dimension  left_type, 
    is_value_and_dimension  right_type
@@ -137,13 +123,23 @@ constexpr auto operator+(
    const left_type   & left,
    const right_type  & right
 ) requires 
-   can_add< left_type, right_type >
+   
+   requires(
+   left_type  t,
+   right_type u
+){ 
+   t.value + u.value;
+}
+
+   ( left_type::dimension == right_type::dimension )
+
 {
-   return value_and_dimension< 
-      decltype( left.value + right.value ), 
-      decltype( left_type::dimension ),
-      left_type::dimension
-   >( left.value * right.value );
+   return 
+      value_and_dimension< 
+         decltype( left.value + right.value ), 
+         decltype( left_type::dimension + right_type::dimension ),
+         left_type::dimension + right_type::dimension
+      >( left.value * right.value );
 }
 
 
@@ -226,15 +222,13 @@ constexpr auto operator*(
 
 // ==========================================================================
 
-auto m = value_and_dimension< int, const xy, xy( 1, 0 ) >( 1 );
-auto s = value_and_dimension< int, const xy, xy( 0, 1 ) >( 1 );
+auto m = value_and_dimension< int, xy, xy( 1, 0 ) >( 1 );
+auto s = value_and_dimension< int, xy, xy( 0, 1 ) >( 1 );
 
 int main(int argc, char **argv){
    auto a = 10 * m;
    auto b = 20 * s;
    auto c = a * b;
-   a = a;
-   a = a + b;
 //   auto d = a / a;
 //   auto e = "hello" * a;
    
