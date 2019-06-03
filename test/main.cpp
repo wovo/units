@@ -3,7 +3,7 @@
 
 // ==========================================================================
 //
-// a dimesion type
+// a dimension type
 //
 // ==========================================================================
 
@@ -35,8 +35,8 @@ struct xy {
       return ( x != right.x ) || ( y != right.y );
    }
    
-   template< typename T >
-   friend T & operator<<( T & left, const xy & right ){
+   template< typename S >
+   friend S & operator<<( S & left, const xy & right ){
       return left << "[" << right.x << "," << right.y << "]";
    }
    
